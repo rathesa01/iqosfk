@@ -49,7 +49,9 @@ function normalisePhone(raw: string): string {
 }
 
 function parseCsv(text: string): SheetRow[] {
-  const lines = text.replace(/\r/g, '').split('\n').filter((l) => l.trim().length > 0);
+  // Strip UTF-8 BOM if present
+  const clean = text.replace(/^\uFEFF/, '');
+  const lines = clean.replace(/\r/g, '').split('\n').filter((l) => l.trim().length > 0);
   if (lines.length < 2) return [];
   const header = splitCsvLine(lines[0]!).map((h) => h.trim().toLowerCase().replace(/\s+/g, '_'));
   return lines.slice(1).map((line) => {

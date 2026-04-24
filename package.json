@@ -13,7 +13,8 @@
     "db:studio": "drizzle-kit studio",
     "db:check": "tsx scripts/check-db.ts",
     "create-admin": "tsx scripts/create-admin.ts",
-    "migrate-from-sheet": "tsx scripts/migrate-from-sheet.ts"
+    "migrate-from-sheet": "tsx scripts/migrate-from-sheet.ts",
+    "fast-migrate": "tsx scripts/fast-migrate.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
