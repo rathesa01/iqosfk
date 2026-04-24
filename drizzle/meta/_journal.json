@@ -22,6 +22,20 @@
       "when": 1777050151309,
       "tag": "0002_analytics_triggers",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1777050151310,
+      "tag": "0003_audit_triggers",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1777050151311,
+      "tag": "0004_rls",
+      "breakpoints": true
     }
   ]
 }
