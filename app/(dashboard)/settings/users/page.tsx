@@ -13,8 +13,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { requireAdmin } from '@/lib/utils/auth-admin';
-import { InviteForm } from './invite-form';
-import { ChangeRoleSelect, DeleteUserButton } from './row-actions';
+import { CreateUserForm } from './create-user-form';
+import { ChangeRoleSelect, DeleteUserButton, ResetPasswordButton } from './row-actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,13 +47,13 @@ export default async function UsersPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>เชิญผู้ใช้ใหม่</CardTitle>
+          <CardTitle>สร้างผู้ใช้ใหม่</CardTitle>
           <CardDescription>
-            ส่งอีเมลเชิญ — ผู้ถูกเชิญต้องคลิกลิงก์เพื่อตั้งรหัสผ่าน
+            ตั้งอีเมล + รหัสผ่านให้ตรงนี้เลย ผู้ใช้ login ได้ทันที (ไม่ต้องยืนยันอีเมล)
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <InviteForm />
+          <CreateUserForm />
         </CardContent>
       </Card>
 
@@ -97,7 +97,10 @@ export default async function UsersPage() {
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        {!isMe && <DeleteUserButton userId={p.id} email={p.email} />}
+                        <div className="flex justify-end gap-1">
+                          <ResetPasswordButton userId={p.id} email={p.email} />
+                          {!isMe && <DeleteUserButton userId={p.id} email={p.email} />}
+                        </div>
                       </TableCell>
                     </TableRow>
                   );

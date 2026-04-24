@@ -19,27 +19,39 @@ function adminClient() {
   );
 }
 
-export async function inviteUserAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
+/**
+ * Create a user directly from the back-office.
+ * No email confirmation step — user is auto-confirmed and can log in
+ * immediately with the password the admin sets.
+ */
+export async function createUserAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
   await requireAdmin();
-  const email = String(fd.get('email') ?? '').trim();
+  const email = String(fd.get('email') ?? '').trim().toLowerCase();
+  const password = String(fd.get('password') ?? '');
   const fullName = String(fd.get('fullName') ?? '').trim();
   const role = String(fd.get('role') ?? 'staff') as 'admin' | 'staff' | 'viewer';
 
   if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     return { ok: false, error: 'อีเมลไม่ถูกต้อง' };
   }
+  if (!password || password.length < 6) {
+    return { ok: false, error: 'รหัสผ่านต้องอย่างน้อย 6 ตัวอักษร' };
+  }
   if (!['admin', 'staff', 'viewer'].includes(role)) {
     return { ok: false, error: 'role ไม่ถูกต้อง' };
   }
 
   const sb = adminClient();
-  const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/login`;
-
-  const { data, error } = await sb.auth.admin.inviteUserByEmail(email, {
-    data: { full_name: fullName || email, role },
-    redirectTo,
+  const { data, error } = await sb.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: { full_name: fullName || email, role },
   });
   if (error) {
+    if (/already.*registered|exists/i.test(error.message)) {
+      return { ok: false, error: 'อีเมลนี้มีผู้ใช้แล้ว' };
+    }
     return { ok: false, error: error.message };
   }
   if (data.user) {
@@ -51,7 +63,7 @@ export async function inviteUserAction(_prev: ActionState, fd: FormData): Promis
     `);
   }
   revalidatePath('/settings/users');
-  return { ok: true, message: `เชิญ ${email} แล้ว — ตรวจ inbox เพื่อ confirm` };
+  return { ok: true, message: `สร้าง ${email} แล้ว — ใช้งานได้ทันที (ไม่ต้อง confirm email)` };
 }
 
 export async function changeRoleAction(userId: string, role: 'admin' | 'staff' | 'viewer') {
@@ -62,6 +74,17 @@ export async function changeRoleAction(userId: string, role: 'admin' | 'staff' |
            updated_at = now()
      WHERE id = ${userId}
   `);
+  revalidatePath('/settings/users');
+}
+
+export async function resetPasswordAction(userId: string, newPassword: string) {
+  await requireAdmin();
+  if (!newPassword || newPassword.length < 6) {
+    throw new Error('รหัสผ่านต้องอย่างน้อย 6 ตัวอักษร');
+  }
+  const sb = adminClient();
+  const { error } = await sb.auth.admin.updateUserById(userId, { password: newPassword });
+  if (error) throw new Error(error.message);
   revalidatePath('/settings/users');
 }
 
