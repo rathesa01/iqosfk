@@ -1,36 +1,87 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# IQOS CRM
 
-## Getting Started
+ระบบจัดการลูกค้า + ออเดอร์ + สต็อก สำหรับธุรกิจขาย IQOS — ทดแทน Google Sheets เดิม
 
-First, run the development server:
+## Stack
+
+- **Next.js 16** (App Router, Turbopack) + TypeScript strict
+- **Tailwind CSS v4** + **shadcn/ui** (Base UI components)
+- **Supabase** (Postgres + Auth + RLS)
+- **Drizzle ORM** + **postgres-js** (type-safe DB queries + migrations)
+- **TanStack Query**, **React Hook Form**, **Zod**, **Recharts**, **date-fns** (TZ Asia/Bangkok)
+- **next-themes** (dark mode), **sonner** (toasts), **lucide-react** (icons)
+- **Noto Sans Thai** + **Geist Mono** fonts
+
+## Quick start
 
 ```bash
+# 1. install
+npm install
+
+# 2. set env (already populated for this project)
+cp .env.example .env.local
+
+# 3. run DB migrations
+npm run db:migrate
+
+# 4. (one-time) create the first admin user
+npm run create-admin -- you@example.com SuperSecret123 "Owner Name"
+
+# 5. dev server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+App runs at <http://localhost:3000>. You'll be redirected to `/login`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Script                                           | Description                                |
+| ------------------------------------------------ | ------------------------------------------ |
+| `npm run dev`                                    | Next.js dev server                         |
+| `npm run build`                                  | Production build                           |
+| `npm run lint`                                   | ESLint                                     |
+| `npm run format`                                 | Prettier write                             |
+| `npm run db:generate`                            | Generate Drizzle SQL migration from schema |
+| `npm run db:migrate`                             | Apply pending migrations to Supabase       |
+| `npm run db:studio`                              | Drizzle Studio (DB browser)                |
+| `npm run db:check`                               | List tables + enums to verify schema       |
+| `npm run create-admin <email> <password> [name]` | Bootstrap an admin user                    |
 
-## Learn More
+## Project layout
 
-To learn more about Next.js, take a look at the following resources:
+```
+app/
+  (auth)/login/        # login page + server actions
+  (dashboard)/         # authenticated layout (sidebar + topbar)
+  layout.tsx           # root layout — fonts, providers
+  providers.tsx        # QueryClient, ThemeProvider, Toaster, TooltipProvider
+components/
+  ui/                  # shadcn primitives
+  layouts/             # sidebar-nav, topbar
+lib/
+  db/schema.ts         # Drizzle schema (single source of truth)
+  db/index.ts          # Drizzle client
+  supabase/{client,server,middleware}.ts
+  analytics/customer.ts # segment / status / due-status logic
+  utils/{auth,date}.ts
+drizzle/               # generated SQL migrations
+scripts/               # migrate, check-db, create-admin, (later) seed
+proxy.ts               # Next.js 16 proxy (was middleware) — refreshes Supabase session
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Roles
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Role     | Permissions                                        |
+| -------- | -------------------------------------------------- |
+| `admin`  | full access; manages users, master data, deletions |
+| `staff`  | create/edit orders & customers, view analytics     |
+| `viewer` | read-only dashboard + reports                      |
 
-## Deploy on Vercel
+## Roadmap
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [x] **M1 — Foundation**: Next.js, Tailwind v4, shadcn, Supabase Auth, Drizzle schema, layout, login
+- [ ] **M2 — Core CRUD**: customers, products, categories, orders (mobile-optimised)
+- [ ] **M3 — Dashboard & Analytics**: today view, charts, filters
+- [ ] **M4 — Stock & Finance**: stock movements, P&L
+- [ ] **M5 — Integrations**: LINE Notify, exports
+- [ ] **M6 — Polish & Deploy**: roles, activity logs, dark mode polish, Vercel
