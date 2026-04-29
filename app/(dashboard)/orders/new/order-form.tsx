@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useMemo, useRef, useState } from 'react';
 import { useFormStatus } from 'react-dom';
-import { Loader2, Minus, Plus, Trash2, Search } from 'lucide-react';
+import { Loader2, Minus, Plus, Trash2, Search, SearchX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -258,22 +258,31 @@ function CustomerPicker({
   const [q, setQ] = useState('');
   const [opts, setOpts] = useState<CustomerOpt[]>([]);
   const [busy, setBusy] = useState(false);
+  const [touched, setTouched] = useState(false);
   const ref = useRef<AbortController | null>(null);
 
   useEffect(() => {
     if (selected || q.trim().length < 1) {
       setOpts([]);
+      setBusy(false);
       return;
     }
     ref.current?.abort();
     const ctrl = new AbortController();
     ref.current = ctrl;
     setBusy(true);
-    fetch(`/api/customers/search?q=${encodeURIComponent(q)}`, { signal: ctrl.signal })
-      .then((r) => r.json())
-      .then((d: CustomerOpt[]) => setOpts(d))
-      .catch(() => {})
-      .finally(() => setBusy(false));
+    setTouched(true);
+    const handle = setTimeout(() => {
+      fetch(`/api/customers/search?q=${encodeURIComponent(q)}`, { signal: ctrl.signal })
+        .then((r) => r.json())
+        .then((d: CustomerOpt[]) => setOpts(d))
+        .catch(() => {})
+        .finally(() => setBusy(false));
+    }, 200); // small debounce
+    return () => {
+      clearTimeout(handle);
+      ctrl.abort();
+    };
   }, [q, selected]);
 
   if (selected) {
@@ -292,6 +301,8 @@ function CustomerPicker({
     );
   }
 
+  const showEmpty = touched && !busy && q.trim().length > 0 && opts.length === 0;
+
   return (
     <div className="space-y-2">
       <div className="relative">
@@ -300,11 +311,25 @@ function CustomerPicker({
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="ค้นหาด้วยชื่อหรือเบอร์…"
-          className="pl-9"
+          className="pl-9 pr-9"
           autoFocus
         />
+        {busy && (
+          <Loader2 className="text-muted-foreground absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin" />
+        )}
       </div>
-      {busy && <p className="text-muted-foreground text-xs">กำลังค้นหา…</p>}
+      {busy && (
+        <div className="text-muted-foreground flex items-center gap-2 px-1 text-sm">
+          <Loader2 className="size-3.5 animate-spin" />
+          <span>กำลังค้นหา…</span>
+        </div>
+      )}
+      {showEmpty && (
+        <div className="text-muted-foreground flex items-center gap-2 rounded-md border border-dashed px-3 py-2 text-sm">
+          <SearchX className="size-4" />
+          <span>ไม่พบลูกค้าที่ตรงกับ &ldquo;{q}&rdquo;</span>
+        </div>
+      )}
       {opts.length > 0 && (
         <ul className="max-h-72 overflow-y-auto rounded-md border">
           {opts.map((o) => (
@@ -315,6 +340,7 @@ function CustomerPicker({
                 onSelect(o);
                 setOpts([]);
                 setQ('');
+                setTouched(false);
               }}
             >
               <div className="font-medium">{o.name}</div>
@@ -332,21 +358,35 @@ function CustomerPicker({
 function ProductPicker({ onPick }: { onPick: (p: ProductOpt) => void }) {
   const [q, setQ] = useState('');
   const [opts, setOpts] = useState<ProductOpt[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [touched, setTouched] = useState(false);
   const ref = useRef<AbortController | null>(null);
 
   useEffect(() => {
     if (q.trim().length < 1) {
       setOpts([]);
+      setBusy(false);
       return;
     }
     ref.current?.abort();
     const ctrl = new AbortController();
     ref.current = ctrl;
-    fetch(`/api/products/search?q=${encodeURIComponent(q)}`, { signal: ctrl.signal })
-      .then((r) => r.json())
-      .then((d: ProductOpt[]) => setOpts(d))
-      .catch(() => {});
+    setBusy(true);
+    setTouched(true);
+    const handle = setTimeout(() => {
+      fetch(`/api/products/search?q=${encodeURIComponent(q)}`, { signal: ctrl.signal })
+        .then((r) => r.json())
+        .then((d: ProductOpt[]) => setOpts(d))
+        .catch(() => {})
+        .finally(() => setBusy(false));
+    }, 200);
+    return () => {
+      clearTimeout(handle);
+      ctrl.abort();
+    };
   }, [q]);
+
+  const showEmpty = touched && !busy && q.trim().length > 0 && opts.length === 0;
 
   return (
     <div className="space-y-2">
@@ -356,9 +396,24 @@ function ProductPicker({ onPick }: { onPick: (p: ProductOpt) => void }) {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="ค้นหาสินค้าด้วยชื่อหรือ SKU…"
-          className="pl-9"
+          className="pl-9 pr-9"
         />
+        {busy && (
+          <Loader2 className="text-muted-foreground absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin" />
+        )}
       </div>
+      {busy && (
+        <div className="text-muted-foreground flex items-center gap-2 px-1 text-sm">
+          <Loader2 className="size-3.5 animate-spin" />
+          <span>กำลังค้นหา…</span>
+        </div>
+      )}
+      {showEmpty && (
+        <div className="text-muted-foreground flex items-center gap-2 rounded-md border border-dashed px-3 py-2 text-sm">
+          <SearchX className="size-4" />
+          <span>ไม่พบสินค้าที่ตรงกับ &ldquo;{q}&rdquo;</span>
+        </div>
+      )}
       {opts.length > 0 && (
         <ul className="max-h-72 overflow-y-auto rounded-md border">
           {opts.map((o) => (
@@ -369,6 +424,7 @@ function ProductPicker({ onPick }: { onPick: (p: ProductOpt) => void }) {
                 onPick(o);
                 setOpts([]);
                 setQ('');
+                setTouched(false);
               }}
             >
               <div className="min-w-0 flex-1">
