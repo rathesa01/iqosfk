@@ -14,18 +14,27 @@ export type PnlBucket = {
 /**
  * P&L by day/month — costs are taken from order_items.unit_cost snapshot
  * (so historic profit is preserved even after product cost changes).
+ *
+ * Effective start date = max(today - days + 1, floorDate). The cutoff
+ * (`floorDate`) lets the owner say "P&L tracking starts on 2026-05-01"
+ * so pre-cutoff orders (which had no recorded prices) are excluded.
  */
 export async function getPnl(
   granularity: 'day' | 'month',
   days: number,
+  floorDate?: string, // YYYY-MM-DD
 ): Promise<PnlBucket[]> {
   const trunc = granularity === 'day' ? 'day' : 'month';
   const fmt = granularity === 'day' ? 'YYYY-MM-DD' : 'YYYY-MM';
+  const floor = floorDate ?? '1970-01-01';
 
   return await db.execute<PnlBucket>(sql`
     WITH range AS (
       SELECT
-        ((now() AT TIME ZONE 'Asia/Bangkok')::date - (${days - 1}::int) * INTERVAL '1 day') AS start_d
+        GREATEST(
+          ((now() AT TIME ZONE 'Asia/Bangkok')::date - (${days - 1}::int) * INTERVAL '1 day')::date,
+          ${floor}::date
+        ) AS start_d
     ),
     series AS (
       SELECT generate_series(

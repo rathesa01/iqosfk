@@ -13,9 +13,16 @@ export type CronSettings = {
   secret?: string; // shared secret for /api/cron/* endpoints
 };
 
+export type FinanceSettings = {
+  startDate?: string; // ISO date YYYY-MM-DD — P&L counts only orders >= this date
+};
+
+export const DEFAULT_FINANCE_START = '2026-05-01';
+
 const KEYS = {
   notify: 'notify',
   cron: 'cron',
+  finance: 'finance',
 } as const;
 
 export async function readSetting<T>(key: string): Promise<T | null> {
@@ -41,6 +48,11 @@ export async function getNotifySettings(): Promise<NotifySettings> {
 
 export async function getCronSettings(): Promise<CronSettings> {
   return (await readSetting<CronSettings>(KEYS.cron)) ?? {};
+}
+
+export async function getFinanceSettings(): Promise<FinanceSettings> {
+  const cfg = (await readSetting<FinanceSettings>(KEYS.finance)) ?? {};
+  return { startDate: cfg.startDate ?? DEFAULT_FINANCE_START };
 }
 
 export const SETTINGS_KEYS = KEYS;

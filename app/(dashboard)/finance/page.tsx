@@ -11,7 +11,10 @@ import {
 import { PnlChart } from '@/components/charts/pnl-chart';
 import { ExpenseQuickAdd } from './expense-quick-add';
 import { DeleteExpenseButton } from './delete-expense-button';
+import { CutoffForm } from './cutoff-form';
 import { getPnl, listExpenses } from '@/lib/analytics/finance';
+import { getFinanceSettings } from '@/lib/settings';
+import { getCurrentProfile } from '@/lib/utils/auth';
 import { formatBkk } from '@/lib/utils/date';
 
 export const dynamic = 'force-dynamic';
@@ -29,10 +32,15 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
   const { range: rangeKey } = await searchParams;
   const range = RANGE_OPTIONS.find((r) => r.value === rangeKey) ?? RANGE_OPTIONS[1]!;
 
-  const [pnl, expenseList] = await Promise.all([
-    getPnl(range.granularity, range.days),
+  const [finCfg, profile, expenseList] = await Promise.all([
+    getFinanceSettings(),
+    getCurrentProfile(),
     listExpenses(50),
   ]);
+  const cutoff = finCfg.startDate!;
+  const isAdmin = profile?.role === 'admin';
+
+  const pnl = await getPnl(range.granularity, range.days, cutoff);
 
   const totals = pnl.reduce(
     (acc, b) => ({
@@ -72,6 +80,8 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
           ))}
         </div>
       </div>
+
+      <CutoffForm current={cutoff} isAdmin={isAdmin} />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="รายได้" value={`฿${totals.revenue.toLocaleString('th-TH', { maximumFractionDigits: 0 })}`} />
